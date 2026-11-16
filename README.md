@@ -1,44 +1,31 @@
 # The Brief.
 
-**One newspaper, made for one reader, every morning.**
+One newspaper, made for one reader, every morning.
 
-The Brief reads ~35 news desks overnight, from Dawn and Geo to the BBC, Nature and ESPNcricinfo, and prints a single personal paper, laid out like a real broadsheet and sized to the minutes you have. Read it on the web, turn its pages, flip any story to see why it's there, keep or kill it with a blue pencil, or download the whole edition as a PDF. Every mark you make changes tomorrow's paper.
+**3rd of 130 · NaSCon '26 AI Hackathon · built solo** · [Read today's edition →](https://the-brief-vert.vercel.app)
 
-**Live:** https://the-brief-vert.vercel.app
+![The Brief](docs/screenshots/landing.png)
 
-Built for NaSCon '26 AI Hackathon.
+## How it works
 
-## What makes it different
+- **Summarise once.** ~35 RSS desks (Dawn, Geo, BBC, Nature, ESPNcricinfo…) are pulled at 06:00 PKT. Each article is summarised, tagged and embedded (768-d, pgvector) exactly once, and that work is shared by every reader.
+- **Rank per reader.** `0.45·similarity + 0.30·Thompson θ + 0.15·recency + 0.10·coverage`, then MMR (λ = 0.72) for diversity, with ~15% of slots forced *off your beat* so the paper can't shrink into a bubble.
+- **Learn.** Keeps, kills, clicks, dwell time and quiz answers update a Beta prior per desk and nudge the reader vector. Evidence decays 3% a day.
+- **Explain.** Every story flips to show why it was chosen. The Editor's Memo says what the paper believes about you, and you can overrule it in plain words.
+- **One AI call per paper.** The editor's note, the Opposition Bench (the lead argued both ways) and the back-page quiz come from one Zod-validated call, with Gemini → Groq failover. Free tiers end to end.
 
-* **Why this story?** Every story flips over to show why it was chosen, in plain words.
-* **Blue pencil.** Keep or kill from the back of the card. Killed stories are struck through and fold out of the paper.
-* **The Opposition Bench.** The lead story argued both ways, as a formal motion.
-* **Three things you now know.** The back page quizzes you on what you read, because the brief was that readers "can't name three things they learned".
-* **Off your beat.** A few stories each day from desks you never read, so the paper can't shrink into a bubble.
-* **Editor's Memo.** The paper tells you what it learned about you, and you can overrule it by rewriting your profile in your own words.
-* **Summarise once, personalise cheaply.** Each article hits the AI once, ever; each paper is vector maths plus one AI call. All on free tiers.
+Ranking formula and learning loop in full: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-![Architecture](docs/architecture.png)
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the ranking formula and learning loop.
-
-## Run it
-
-Requires Node 20+.
+## Run
 
 ```bash
 npm install
-cp .env.example .env.local      # then fill in the keys (see below)
-npm run db:setup                # creates tables, pgvector, search function
-npm run ingest                  # pulls feeds and files them with AI (2–4 min first time)
-npm run dev                     # http://localhost:3000
+cp .env.example .env.local
+npm run db:setup && npm run ingest && npm run dev
 ```
 
-1. Sign up, answer one question, mark a few headlines, pick your minutes.
-2. Your first paper prints.
-3. Optional, for demos: `npm run seed:demo -- you@example.com` replays a week of reading so the profile and memo show real learning.
-
-### Keys (all free)
+<details>
+<summary>Keys, demo data, deploy</summary>
 
 | Variable | Where |
 |---|---|
@@ -48,14 +35,13 @@ npm run dev                     # http://localhost:3000
 | `DATABASE_URL` | Supabase → Connect → Session pooler |
 | `CRON_SECRET` | any long random string |
 
-In Supabase → Authentication → Sign In / Providers → Email, turn **off** "Confirm email".
+In Supabase → Authentication → Email, turn off "Confirm email".
 
-### Deploy
+`npm run seed:demo -- you@example.com` replays a week of reading, so the profile and memo show real learning.
 
-Import the repo on Vercel, add the same environment variables, deploy. `vercel.json` schedules `/api/ingest` daily at 06:00 PKT.
+Deploy: import on Vercel, add the same variables. `vercel.json` runs `/api/ingest` daily at 06:00 PKT.
+</details>
 
-## Stack
+---
 
-Next.js 15 · TypeScript · Tailwind v4 · Motion · Supabase (Postgres, pgvector, Auth) · Gemini Flash + Groq (free tiers) · Gemini embeddings · rss-parser · Zod · Vercel.
-
-Type: Newsreader (Production Type), Libre Franklin, UnifrakturMaguntia, all open-source and self-hosted.
+Next.js 15 · TypeScript · Tailwind v4 · Motion · Supabase (Postgres, pgvector, Auth) · Gemini + Groq · Vercel
